@@ -1,0 +1,35 @@
+What is Database Locking and Why You Need It : -
+The Problem: Race Conditions
+When multiple users or requests try to modify the same data simultaneously:
+
+Time    User A                    User B                    Database
+─────────────────────────────────────────────────────────────────────
+1       Read balance: $100                                   
+2                                 Read balance: $100         
+3       Add $50 → New: $150                                   
+4                                 Subtract $30 → New: $70    
+5                                 Write $70 → OVERWRITES!    
+6       Write $150 → LOST!       
+
+RESULT: User A's $50 deposit is LOST!
+
+The Solution: Distributed Locking : -
+A lock ensures only one operation can modify a resource at a time:
+
+Time    User A                    User B                    Redis Lock
+─────────────────────────────────────────────────────────────────────
+1       Acquire lock for User123  →                          LOCKED by A
+2                                 Try acquire lock → WAIT    
+3       Read balance: $100                                   
+4       Add $50 → $150                                       
+5       Write $150 → success                                 
+6       Release lock              →                          UNLOCKED
+7                                 Acquire lock for User123   LOCKED by B
+8                                 Read balance: $150         
+9                                 Subtract $30 → $120        
+10                                Write $120                 
+11                                Release lock               
+12                                                           Both operations
+                                                             succeeded! ✅
+
+

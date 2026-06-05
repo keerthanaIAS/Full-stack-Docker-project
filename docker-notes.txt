@@ -1,0 +1,35 @@
+# Start everything
+docker-compose up
+
+# Start in background
+docker-compose up -d
+
+# Stop everything
+docker-compose down
+
+# Stop AND delete volumes (WARNING: deletes database data!)
+docker-compose down -v
+
+# Rebuild images and start
+docker-compose up --build
+
+# View logs
+docker-compose logs backend
+
+# Run one-time command
+docker-compose run backend npm test
+
+
+Quick Reference Card:
+Keyword	                                      Purpose
+version	                             Compose file format version
+services	                             List of containers
+build	                             Build image from Dockerfile
+image	                             Use pre-built image
+ports	                             Map host port → container port
+environment	                             Set environment variables
+volumes	                             Persist data
+depends_on	                             Startup order
+restart	                             Auto-restart behavior
+command	                             Override startup command
+container_name	                       Fixed container name
