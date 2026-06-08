@@ -900,3 +900,59 @@ Centralized API keys
 │  Result: Admin changes config in UI, backend applies it ✅       │
 └─────────────────────────────────────────────────────────────────┘
 
+*Common questions*:-
+--------------------
+1. Does build: . mean local Dockerfile?
+YES - It looks for Dockerfile in the current directory (.)
+app1:
+  build: .  # Looks for ./Dockerfile
+
+2. Without Dockerfile, can it run?
+NO - build: . REQUIRES a Dockerfile. Without it, you get error:
+ERROR: Cannot locate specified Dockerfile: Dockerfile
+
+3. Do code changes auto-update?
+NO - Dockerfile runs COPY . . only during docker build
+Code change → Need to rebuild → docker compose build
+What Happens When You Change Code?
+bash
+   1. You change app.js
+   2. Docker containers still have OLD code
+   3. You MUST rebuild:
+
+docker compose build      # Rebuilds images with new code
+docker compose up -d      # Restarts with new code
+
+OR one command:
+docker compose up -d --build
+For Auto-Updates (Development Only)
+Add volumes to auto-sync code:
+
+app1:
+  build: .
+  volumes:
+    - ./app.js:/app/app.js  # Live sync! No rebuild needed
+  environment:
+    - INSTANCE_NAME=app1
+    - PORT=3001
+With volumes: Code changes appear instantly without rebuild.
+
+Summary Table
+Question	                         Answer
+build: . needs Dockerfile?	       ✅ YES
+Without Dockerfile?	               ❌ Fails to run
+Code changes auto-reflect?	       ❌ NO (need rebuild)
+How to auto-refresh?	             Add volumes: or use --build
+Command to rebuild	               docker compose up -d --build
+
+One Command for Code Changes
+# Every time you change code, run:
+docker compose up -d --build
+
+## Networks in yaml file explain:
+1. Without specifying network - Docker creates a default network and ALL containers can talk to each other by name automatically.
+2. With custom networks - Containers can ONLY talk to others on the SAME network.
+3. Different networks = ISOLATED - Backend on "backend-net" cannot talk to MongoDB on "mongo-net" unless they share a network.
+4. One container, multiple networks - A container can join several networks to act as a "bridge".
+5. Default behavior - If you don't define networks, everything is on one default network and everything can access everything.
+

@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    image: swarm-app:latest
+    build: .
+    ports:
+      - "8080:3000"
+    deploy:
+      mode: replicated
+      replicas: 4
+      restart_policy:
+        condition: on-failure

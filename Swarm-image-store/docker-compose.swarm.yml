@@ -1,0 +1,21 @@
+services:
+
+  backend:
+    image: backend:v1
+    build: ./backend
+    ports:
+      - "5000:5000"
+
+    deploy:
+      mode: replicated
+      replicas: 3
+
+  frontend:
+    image: frontend:v1
+    build: ./frontend
+    ports:
+      - "3000:3000"
+
+    deploy:
+      mode: replicated
+      replicas: 2
