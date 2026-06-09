@@ -586,5 +586,9 @@ showing all containers on the Swarm network.
 ✅ Rolling updates
 docker service update --image backend:v2
 
-✅ Desired state reconciliation
-Swarm continuously maintains the configured replica count.
+## Distroless:-
+
+*"Distroless"* container images (like Docker) that contain only your application and its essential runtime dependencies, without a standard operating system.
+"distro" (short for Linux distribution, such as Ubuntu or Alpine) and "less"
+
+

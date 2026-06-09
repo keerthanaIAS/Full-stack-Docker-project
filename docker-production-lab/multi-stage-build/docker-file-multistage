@@ -1,0 +1,42 @@
+# Stage 1
+FROM node:20 AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+
+COPY . .
+
+# this line is using for multi stage build Without this there is no step creating of /app/dist
+RUN npm run build
+
+# Stage 2
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package.json first (needed for npm install)
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm install --omit=dev
+# --omit=dev means install only production dependencies and skip all development dependencies.
+
+# COPY --from=builder
+# COPY --from=builder /app/node_modules ./node_modules -> if you already created production-only dependencies in the builder.
+COPY --from=builder /app/dist ./dist 
+# Now the final image contains only:
+# dist/
+# production dependencies
+
+# CMD ["npm","start"]
+CMD ["node","dist/app.js"]
+
+# Your image became smaller mostly because:
+# node:20
+# ↓
+# node:20-alpine : this is why image size reduced from docker-lab-backend v2 357a003c5afc 25 minutes ago  1.61GB 
+# to docker-lab-backend multistage 70ba5e46d8c1  9 seconds ago  213MB without given dist/

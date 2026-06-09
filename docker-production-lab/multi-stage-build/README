@@ -1,0 +1,461 @@
+## Phase 4: Distroless Docker Images
+
+This is where many developers get confused because Distroless looks similar to Alpine, but its goal is different.
+
+---
+
+## First understand the problem
+
+Current runtime image:
+
+```dockerfile
+FROM node:20-alpine
+```
+
+Contains:
+
+```text
+Node.js
+Alpine Linux
+Shell (sh)
+Package manager
+Linux utilities
+```
+
+You can do:
+
+```bash
+docker exec -it backend sh
+```
+
+and get inside.
+
+---
+
+### Security problem
+
+If an attacker gets access to your container:
+
+```text
+Shell available
++
+Linux commands available
++
+Utilities available
+```
+
+makes it easier to move around inside the container.
+
+---
+
+## Distroless idea
+
+Google created Distroless images.
+
+Instead of:
+
+```text
+Node
++
+Linux OS
++
+Shell
++
+Utilities
+```
+
+you get:
+
+```text
+Node
++
+Only required runtime libraries
+```
+
+Nothing extra.
+
+---
+
+## Think of it this way
+
+### Alpine
+
+```text
+House
+├── Bedroom
+├── Kitchen
+├── Hall
+└── Bathroom
+```
+
+### Distroless
+
+```text
+Tiny room
+└── Only what you need
+```
+
+---
+
+## Practical Example
+
+Create:
+
+```dockerfile
+FROM node:20 AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+FROM gcr.io/distroless/nodejs20-debian12
+
+WORKDIR /app
+
+COPY --from=builder /app .
+
+CMD ["app.js"]
+```
+
+Notice:
+
+```dockerfile
+CMD ["app.js"]
+```
+
+not:
+
+```dockerfile
+CMD ["node","app.js"]
+```
+
+because Node is already the entrypoint.
+
+---
+
+## Build
+
+```bash
+docker build -t backend:distroless .
+```
+
+Run:
+
+```bash
+docker run -d \
+--name backend-distroless \
+-p 3000:3000 \
+backend:distroless
+```
+
+---
+
+## Test
+
+Try:
+
+```bash
+docker exec -it backend-distroless sh
+```
+
+Result:
+
+```text
+Error
+```
+
+No shell exists.
+
+That's expected.
+
+---
+
+## Compare
+
+| Feature                    | Node | Alpine | Distroless |
+| -------------------------- | ---- | ------ | ---------- |
+| Runs app                   | ✅    | ✅      | ✅          |
+| Shell                      | ✅    | ✅      | ❌          |
+| Package manager            | ✅    | ✅      | ❌          |
+| Debugging inside container | ✅    | ✅      | ❌          |
+| Smaller attack surface     | ❌    | ⚠️     | ✅          |
+| Production usage           | ⚠️   | ✅      | ✅✅         |
+
+---
+
+## When should you use Distroless?
+
+Good for:
+
+```text
+Production
+Kubernetes
+Swarm
+Microservices
+APIs
+```
+
+Avoid while learning/debugging because:
+
+```bash
+docker exec -it container sh
+```
+
+won't work.
+
+---
+
+## Real-world flow
+
+Most companies:
+
+```text
+Development
+↓
+node:20
+
+Testing
+↓
+node:20-alpine
+
+Production
+↓
+Distroless
+```
+
+---
+
+## Practical task
+
+Create a new Dockerfile:
+
+```dockerfile
+FROM node:20 AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+FROM gcr.io/distroless/nodejs20-debian12
+
+WORKDIR /app
+
+COPY --from=builder /app .
+
+CMD ["app.js"]
+```
+
+Then:
+
+```bash
+docker build -t backend:distroless .
+docker run -d --name distroless-app -p 4000:3000 backend:distroless
+docker ps
+docker logs distroless-app
+docker exec -it distroless-app sh
+```
+
+Observe:
+
+1. App runs normally.
+2. Logs work normally.
+3. `docker exec ... sh` fails.
+
+That's the key lesson of Distroless.
+
+After you complete that, move to **Phase 5: Swarm Overlay Network**, where you'll learn how containers on different Swarm nodes communicate using a virtual network.
+
+
+## Terminal logs:
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker build -t backend:distroless . 
+[+] Building 3.1s (14/14) FINISHED                                                                         docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                                                       0.0s
+ => => transferring dockerfile: 225B                                                                                       0.0s
+ => [internal] load metadata for docker.io/library/node:20                                                                 1.1s
+ => [internal] load metadata for gcr.io/distroless/nodejs20-debian12:latest                                                1.5s
+ => [internal] load .dockerignore                                                                                          0.0s
+ => => transferring context: 2B                                                                                            0.0s
+ => [builder 1/5] FROM docker.io/library/node:20@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5   0.0s
+ => => resolve docker.io/library/node:20@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5           0.0s
+ => [stage-1 1/3] FROM gcr.io/distroless/nodejs20-debian12:latest@sha256:6fe218dbad37e979c7542e670d28d6e23d3f53d2929693bc  0.0s
+ => => resolve gcr.io/distroless/nodejs20-debian12:latest@sha256:6fe218dbad37e979c7542e670d28d6e23d3f53d2929693bc9cdded8b  0.0s
+ => [internal] load build context                                                                                          0.0s
+ => => transferring context: 19.10kB                                                                                       0.0s
+ => CACHED [builder 2/5] WORKDIR /app                                                                                      0.0s
+ => CACHED [builder 3/5] COPY package*.json ./                                                                             0.0s
+ => CACHED [builder 4/5] RUN npm install                                                                                   0.0s
+ => [builder 5/5] COPY . .                                                                                                 0.0s
+ => CACHED [stage-1 2/3] WORKDIR /app                                                                                      0.0s
+ => [stage-1 3/3] COPY --from=builder /app .                                                                               0.2s
+ => exporting to image                                                                                                     0.5s
+ => => exporting layers                                                                                                    0.3s
+ => => exporting manifest sha256:c7d8d6519cf61493cb194856b5999006a79a60a664f7150f89d7a526d3c194db                          0.0s
+ => => exporting config sha256:5ade933a0001007560fae1af4558f286dba80c0979cd644224ebae2cdde64dc7                            0.0s
+ => => exporting attestation manifest sha256:3f9c2ec74fabc52e14dcbe66a5978935fa6de08d6541fea8ea2ae51284d9c08c              0.0s
+ => => exporting manifest list sha256:37b19111becc8eec0bf6b7942260738a2f2236db7442ab6b27306d96fffe3c38                     0.0s
+ => => naming to docker.io/library/backend:distroless                                                                      0.0s
+ => => unpacking to docker.io/library/backend:distroless                                                                   0.2s
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/yamer8tzp39ojxcg6xbgl1hrw
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker run -d \                      
+--name backend-distroless \
+-p 3000:3000 \
+backend:distroless
+docker: Error response from daemon: Conflict. The container name "/backend-distroless" is already in use by container "b4d7d226971957f50a0c555f5e71df078bfd79edd477f53b48c95f6a96f3484a". You have to remove (or rename) that container to be able to reuse that name.
+
+Run 'docker run --help' for more information
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker rm -f backend-distroless
+backend-distroless
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker run -d \                
+--name backend-distroless \
+-p 3000:3000 \
+backend:distroless
+25adecc663fdac6bcdf2cb997feb64028c1e9e34abf62baab80f55be4e515a33
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker exec -it backend-distroless sh
+Error response from daemon: container 25adecc663fdac6bcdf2cb997feb64028c1e9e34abf62baab80f55be4e515a33 is not running
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker ps                            
+CONTAINER ID   IMAGE     COMMAND                  CREATED       STATUS       PORTS                                         NAMES
+c928d43b252d   redis     "docker-entrypoint.s…"   2 hours ago   Up 2 hours   6379/tcp                                      redis
+f79bac26b7a8   redis     "docker-entrypoint.s…"   2 hours ago   Up 2 hours   0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp   redis-local
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker logs backend-distroless
+Backend Running
+node:internal/process/promises:391
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+Error: getaddrinfo ENOTFOUND redis
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26)
+Emitted 'error' event on Class instance at:
+    at RedisSocket.<anonymous> (/app/node_modules/@redis/client/dist/lib/client/index.js:588:18)
+    at RedisSocket.emit (node:events:524:28)
+    at #connect (/app/node_modules/@redis/client/dist/lib/client/socket.js:219:22)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async Class.connect (/app/node_modules/@redis/client/dist/lib/client/index.js:698:9) {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'redis'
+}
+
+Node.js v20.20.0
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker network create app-network
+45300b775bc545bde065421804f31caeb455325d1e76ebabd56c1afb04d08a3c
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker run -d \
+  --name redis \
+  --network app-network \
+  redis
+85a466be06c6bf6271b70656f7cbb5afcecac4bbcc59a97382935be8c9b4a0c2
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker run -d \
+  --name backend-distroless \
+  --network app-network \
+  -p 3000:3000 \
+  backend:distroless
+df2317f5fd95566b6f7cec281a6b0beff276ca1fbf91800ec2db61470b244d2b
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker exec -it backend-distroless sh
+OCI runtime exec failed: exec failed: unable to start container process: exec: "sh": executable file not found in $PATH: unknown
+keerthana@Keerthanas-MacBook-Air multi-stage-build % 
+
+## Distroless:-
+keerthana@Keerthanas-MacBook-Air multi-stage-build % docker exec -it backend-distroless sh
+OCI runtime exec failed: exec failed: unable to start container process: exec: "sh": executable file not found in $PATH: unknown
+
+The error:
+
+```bash
+docker exec -it backend-distroless sh
+```
+
+returns:
+
+```bash
+exec: "sh": executable file not found in $PATH
+```
+
+because inside the Distroless container:
+
+```text
+/bin/sh ❌
+/bin/bash ❌
+apt ❌
+apk ❌
+curl ❌
+ping ❌
+```
+
+don't exist.
+
+Normal image:
+
+```text
+Container
+ ├── Node
+ ├── Shell (sh)
+ ├── Package Manager
+ ├── OS Tools
+ └── App
+```
+
+Distroless image:
+
+```text
+Container
+ ├── Node
+ └── App
+```
+
+Nothing extra.
+
+That's why attackers cannot easily:
+
+```bash
+docker exec -it container sh
+```
+
+and start exploring the container.
+
+---
+
+You can verify the application is running using:
+
+```bash
+docker ps
+```
+
+If it shows:
+
+```text
+STATUS: Up
+```
+
+then the Node application started successfully.
+
+You can also test:
+
+```bash
+curl localhost:3000
+```
+
+or open:
+
+```text
+http://localhost:3000
+```
+
+from your browser.
+
+---
+
+## One-line: -
+Multi-stage build reduces unnecessary files.
+Distroless removes shell and OS utilities.
+Smaller attack surface.
+More secure production image.
+
+*One-line definition:*
+Distroless images contain only the application runtime and required files, removing shells and operating-system tools to improve security and reduce image size.
