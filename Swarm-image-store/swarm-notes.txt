@@ -1,0 +1,211 @@
+### Why `docker swarm init`?
+
+Normally Docker runs containers directly:
+```bash
+docker run nginx
+```
+
+Docker only manages containers on that single machine.
+
+When you run:
+```bash
+docker swarm init
+```
+
+Docker changes from:
+```text
+Single Docker Engine
+```
+
+to:
+```text
+Swarm Cluster Manager
+```
+
+Even on your laptop, Docker now behaves like a cluster manager.
+
+It creates:
+
+```text
+Manager Node
+Swarm Control Plane
+Raft Database
+Service Scheduler
+Overlay Network Support
+Secrets Management
+```
+
+Without `swarm init`, Docker doesn't know how to:
+
+* Manage replicas
+* Schedule services
+* Create overlay networks
+* Store secrets
+* Perform rolling updates
+* Roll back deployments
+
+That's why commands like:
+```bash
+docker service create
+docker stack deploy
+docker secret create
+```
+
+fail before Swarm is initialized.
+
+---
+
+### Why `docker stack deploy`?
+
+Before Swarm:
+```bash
+docker compose up -d
+```
+
+creates:
+```text
+Container 1
+Container 2
+Container 3
+```
+
+Docker Compose manages containers.
+
+---
+
+After Swarm:
+```bash
+docker stack deploy
+```
+
+creates:
+```text
+Service
+ ↓
+Tasks
+ ↓
+Containers
+```
+
+Swarm manages services instead of individual containers.
+
+Example:
+```yaml
+services:
+  backend:
+    image: backend:v2
+
+    deploy:
+      replicas: 3
+```
+
+When you run:
+```bash
+docker stack deploy -c docker-compose.yml myapp
+```
+
+Swarm sees:
+```text
+Desired State:
+Backend = 3 replicas
+```
+
+If one container dies:
+```text
+Running = 2
+Desired = 3
+```
+
+Swarm automatically creates another container.
+
+With Compose, Docker doesn't continuously enforce a desired cluster state in the same way.
+
+---
+
+### Why not use Compose for Replicas?
+
+Compose can scale:
+```bash
+docker compose up --scale backend=3
+```
+
+But:
+```text
+No rolling updates
+No rollback
+No overlay network
+No secrets
+No cluster scheduling
+No multi-node support
+```
+
+Swarm adds those orchestration features.
+
+---
+
+### Real-world analogy
+
+**Docker Compose**
+
+```text
+Restaurant owner manually hires:
+3 cooks
+2 waiters
+```
+
+If one cook leaves:
+
+```text
+Owner must hire again manually.
+```
+
+---
+
+**Docker Swarm**
+
+```text
+Restaurant manager says:
+Always keep 3 cooks.
+```
+
+If one cook leaves:
+
+```text
+Manager automatically hires another.
+```
+
+That manager is Swarm.
+
+---
+
+### Simple memory trick
+
+```bash
+docker swarm init
+```
+
+= Turn Docker Engine into a Swarm orchestrator.
+
+```bash
+docker stack deploy
+```
+
+= Deploy an application as Swarm-managed services with replicas, scaling, networking, secrets, updates, and self-healing.
+
+So the flow is:
+
+```text
+docker swarm init
+        ↓
+Swarm mode enabled
+        ↓
+docker stack deploy
+        ↓
+Services created
+        ↓
+Tasks created
+        ↓
+Containers created
+        ↓
+Swarm continuously maintains desired state
+```
