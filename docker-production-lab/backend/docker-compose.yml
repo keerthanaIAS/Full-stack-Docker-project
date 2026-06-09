@@ -1,0 +1,30 @@
+services:
+  backend:
+    build: .
+    container_name: backend
+    ports:
+      - "3000:3000"
+    restart: always
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+    networks:
+      - app-net
+
+  redis:
+    image: redis
+    restart: always
+    networks:
+      - app-net
+    volumes:
+      - redis-data:/data
+
+networks:
+  app-net:
+
+volumes:
+  redis-data:

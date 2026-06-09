@@ -1,21 +1,41 @@
 services:
 
   backend:
-    image: backend:v1
+    image: backend:v2
     build: ./backend
     ports:
       - "5000:5000"
+    networks:
+      - my-overlay
+    secrets:
+      - db_password
+    environment:
+      - NODE_ENV=production
+      # Password is NOT here
 
     deploy:
       mode: replicated
       replicas: 3
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 200M
 
   frontend:
     image: frontend:v1
     build: ./frontend
     ports:
       - "3000:3000"
+    networks:
+      - my-overlay
 
     deploy:
       mode: replicated
       replicas: 2
+
+networks:
+  my-overlay:
+
+secrets:
+  db_password:
+    external: true

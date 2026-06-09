@@ -1,0 +1,317 @@
+1. Restart Policy:-
+-----------------
+Definition
+If a container crashes, Docker automatically starts it again.
+
+services:
+  backend:
+    image: docker-lab-backend:v1
+    restart: always
+
+Options:
+restart: "no"          # default
+restart: always
+restart: unless-stopped
+restart: on-failure
+Practical
+
+Kill Node:
+docker exec -it backend sh
+kill 1
+
+Container exits.
+
+With:
+restart: always
+
+Docker automatically starts it again.
+
+2. Healthcheck:-
+----------------
+Definition
+Checks whether the application is healthy.
+
+services:
+  backend:
+    image: docker-lab-backend:v1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+Check:
+docker ps
+
+Output:
+Up (healthy)
+or
+Up (unhealthy)
+
+3. Network:-
+------------
+Definition
+Allows containers to communicate using names.
+
+services:
+  backend:
+    networks:
+      - app-net
+  redis:
+    networks:
+      - app-net
+
+networks:
+  app-net:
+
+Now backend can use:
+host: "redis"
+
+instead of IP address.
+
+4. Volume:-
+-----------
+Definition
+Stores data outside the container.
+
+services:
+  redis:
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
+
+Container deleted:
+docker compose down
+
+Data remains.
+
+5. Multi-Stage Build:-
+---------------------
+Definition
+Build with one image, run with a smaller image.
+
+Compose uses the Dockerfile automatically:
+services:
+  backend:
+    build: .
+
+If Dockerfile contains:
+FROM node:20 AS builder
+...
+FROM node:20-alpine
+
+Compose builds the multi-stage image.
+
+6. Distroless:-
+---------------
+Definition
+Run application without shell and OS tools.
+
+services:
+  backend:
+    image: backend:distroless
+
+No special Compose configuration needed.
+
+MODEL:-
+--------
+docker compose up
+        ↓
+Backend starts
+        ↓
+Redis starts
+        ↓
+Both join app-net
+        ↓
+Healthcheck runs
+        ↓
+If backend crashes
+        ↓
+restart: always
+        ↓
+Docker starts it again
+
+One-line summary :-
+-----------------
+In Compose, restart policies, healthchecks, networks, volumes, multi-stage builds, and distroless
+images are all configured declaratively inside docker-compose.yml instead of passing long docker run commands.
+
+Terminal Logs:-
+----------------
+keerthana@Keerthanas-MacBook-Air backend % docker compose up -d                    
+[+] Running 2/2
+ ✔ Container backend          Started                                                                                      0.2s 
+ ✔ Container backend-redis-1  Started                                                                                      0.3s 
+keerthana@Keerthanas-MacBook-Air backend % docker ps
+CONTAINER ID   IMAGE             COMMAND                  CREATED          STATUS                    PORTS                                         NAMES
+def3eea2c981   redis             "docker-entrypoint.s…"   17 seconds ago   Up 16 seconds             6379/tcp                                      backend-redis-1
+834640af4017   backend-backend   "docker-entrypoint.s…"   17 seconds ago   Up 16 seconds (healthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp   backend
+keerthana@Keerthanas-MacBook-Air backend % docker exec -it 834640af4017 sh    
+# ps    
+  PID TTY          TIME CMD
+   60 pts/0    00:00:00 sh
+  102 pts/0    00:00:00 ps
+# kill 1
+# %                                                                                                                             
+keerthana@Keerthanas-MacBook-Air backend % docker ps
+CONTAINER ID   IMAGE             COMMAND                  CREATED         STATUS                            PORTS                                         NAMES
+def3eea2c981   redis             "docker-entrypoint.s…"   2 minutes ago   Up 2 minutes                      6379/tcp                                      backend-redis-1
+834640af4017   backend-backend   "docker-entrypoint.s…"   2 minutes ago   Up 5 seconds (health: starting)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp   backend
+keerthana@Keerthanas-MacBook-Air backend % docker logs -f 834640af4017
+
+> backend@1.0.0 start
+> node app.js
+
+Backend Running
+npm error path /app
+npm error command failed
+npm error signal SIGTERM
+npm error command sh -c node app.js
+npm error A complete log of this run can be found in: /root/.npm/_logs/2026-06-09T10_41_02_079Z-debug-0.log
+
+> backend@1.0.0 start
+> node app.js
+
+Backend Running
+
+keerthana@Keerthanas-MacBook-Air backend % docker ps                  
+CONTAINER ID   IMAGE             COMMAND                  CREATED         STATUS                        PORTS                                         NAMES
+def3eea2c981   redis             "docker-entrypoint.s…"   3 minutes ago   Up 3 minutes                  6379/tcp                                      backend-redis-1
+834640af4017   backend-backend   "docker-entrypoint.s…"   3 minutes ago   Up About a minute (healthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp   backend
+keerthana@Keerthanas-MacBook-Air backend % docker inspect 834640af4017 | grep Health -A 20
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2026-06-09T10:45:55.778036425Z",
+                        "End": "2026-06-09T10:45:55.844131883Z",
+                        "ExitCode": 0,
+                        "Output": "  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r100     2  100     2    0     0    665      0 --:--:-- --:--:-- --:--:--  1000\nOK"
+                    },
+                    {
+                        "Start": "2026-06-09T10:46:05.850287804Z",
+                        "End": "2026-06-09T10:46:05.927235013Z",
+                        "ExitCode": 0,
+                        "Output": "  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r100     2  100     2    0     0    298      0 --:--:-- --:--:-- --:--:--   333\nOK"
+                    },
+                    {
+                        "Start": "2026-06-09T10:46:15.933762337Z",
+                        "End": "2026-06-09T10:46:15.989972462Z",
+                        "ExitCode": 0,
+                        "Output": "  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r100     2  100     2    0     0    609      0 --:--:-- --:--:-- --:--:--   666\nOK"
+--
+            "Healthcheck": {
+                "Test": [
+                    "CMD",
+                    "curl",
+                    "-f",
+                    "http://localhost:3000/health"
+                ],
+                "Interval": 10000000000,
+                "Timeout": 5000000000,
+                "Retries": 3
+            },
+            "Image": "backend-backend",
+            "Volumes": null,
+            "WorkingDir": "/app",
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "com.docker.compose.config-hash": "52d1d7a3cb7efbffec91ab0d2cb9ffed5c10d3a4d00a095e2cf3129bb545de79",
+                "com.docker.compose.container-number": "1",
+keerthana@Keerthanas-MacBook-Air backend % docker compose exec backend sh
+# ping redis
+sh: 1: ping: not found
+# nslookup redis
+sh: 2: nslookup: not found
+# getent hosts redis
+172.20.0.3      redis
+# 
+^F%                                                                                                                             
+keerthana@Keerthanas-MacBook-Air backend % docker network ls
+NETWORK ID     NAME              DRIVER    SCOPE
+830932ceabca   app-net           bridge    local
+45300b775bc5   app-network       bridge    local
+94cde7ce2b9c   backend_app-net   bridge    local
+53fcc873cc0a   bridge            bridge    local
+33376a3cbf5e   host              host      local
+b1796f480fc1   none              null      local
+keerthana@Keerthanas-MacBook-Air backend % docker network inspect backend_app-net  
+[
+    {
+        "Name": "backend_app-net",
+        "Id": "94cde7ce2b9c91514f13f21865dd983d2b17ce145c15382f1211e7f8faa3ae41",
+        "Created": "2026-06-09T10:40:16.84723617Z",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "172.20.0.0/16",
+                    "Gateway": "172.20.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "834640af4017badab2f53d405a76514798d0f2c38c548fba6ada3ef977813430": {
+                "Name": "backend",
+                "EndpointID": "a3555384179bdbe32f6dbefb1a9ea8250a2ed2d2df0e818cfee529e153060f17",
+                "MacAddress": "96:01:cd:a6:0b:f6",
+                "IPv4Address": "172.20.0.2/16",
+                "IPv6Address": ""
+            },
+            "def3eea2c98193e5ade7936a5e81f4f43a559a2e0f7e1e1fe1084a2728852267": {
+                "Name": "backend-redis-1",
+                "EndpointID": "6ab97ee2ef857e18a8a90ec7dd1ff55da2756367f17a7925c84a11476e2a5cde",
+                "MacAddress": "8a:19:35:74:e6:36",
+                "IPv4Address": "172.20.0.3/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {
+            "com.docker.network.enable_ipv4": "true",
+            "com.docker.network.enable_ipv6": "false"
+        },
+        "Labels": {
+            "com.docker.compose.config-hash": "012a6d4a08fbd01cf5f669d3ad3d0ae70ef8740883fd4ace426fdcb43e21e87e",
+            "com.docker.compose.network": "app-net",
+            "com.docker.compose.project": "backend",
+            "com.docker.compose.version": "2.39.1"
+        }
+    }
+]
+keerthana@Keerthanas-MacBook-Air backend % docker compose exec redis sh
+# echo "hello" > /data/test.txt
+# cat /data/test.txt
+hello
+# 
+keerthana@Keerthanas-MacBook-Air backend % docker compose down
+[+] Running 3/3
+ ✔ Container backend-redis-1  Removed                                                                                      0.2s 
+ ✔ Container backend          Removed                                                                                      0.7s 
+ ✔ Network backend_app-net    Removed                                                                                      0.2s 
+keerthana@Keerthanas-MacBook-Air backend % docker compose up -d
+[+] Running 3/3
+ ✔ Network backend_app-net    Created                                                                                      0.0s 
+ ✔ Container backend          Started                                                                                      0.2s 
+ ✔ Container backend-redis-1  Started                                                                                      0.2s 
+keerthana@Keerthanas-MacBook-Air backend % docker compose exec redis sh
+cat /data/test.txt
+# cat /data/test.txt
+hello
