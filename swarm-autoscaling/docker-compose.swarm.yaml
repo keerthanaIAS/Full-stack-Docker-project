@@ -1,0 +1,35 @@
+version: "3.8"
+
+configs:
+  scaler_script:
+    file: ./scaler.sh
+
+services:
+  web-app:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    deploy:
+      mode: replicated
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+
+  scaler:
+    image: docker:cli
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    volumes: # this line supporting scaler sh commands lines to reach docker -> one line answer
+      - /var/run/docker.sock:/var/run/docker.sock # /var/run/docker.sock:/var/run/docker.sock allows the Docker commands inside scaler.sh to communicate with the host's Docker daemon.
+      # Without the socket mount, this command inside scaler.sh cannot reach Docker and will fail.
+    configs:
+      - source: scaler_script
+        target: /scaler.sh
+        mode: 0555
+    entrypoint: ["/bin/sh"]
+    command: ["/scaler.sh"]

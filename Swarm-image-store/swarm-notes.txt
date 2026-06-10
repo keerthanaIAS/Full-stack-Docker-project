@@ -209,3 +209,32 @@ Containers created
         ↓
 Swarm continuously maintains desired state
 ```
+
+In Docker Swarm, **secrets are not exposed as environment variables by default**. : -
+---------------------------------------------------------------------------------
+If you declare:
+
+```yaml id="chif8n"
+secrets:
+  - db_password
+```
+
+Swarm mounts the secret as a file inside the container:
+
+```text id="3d8jpt"
+/run/secrets/db_password
+```
+
+In Node.js, read it like this:
+
+```js id="n2xg1n"
+const fs = require("fs");
+
+const dbPassword = fs.readFileSync("/run/secrets/db_password", "utf8").trim();
+
+console.log(dbPassword);
+```
+
+### One-line rule
+
+**Docker Swarm secrets are read from files in `/run/secrets/`, not from `process.env` unless you manually copy them into environment variables.**
