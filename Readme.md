@@ -292,3 +292,320 @@ Compose → connects apps
 Container → runs app
 Volume → syncs code
 Network → connects containers
+
+
+If you're preparing for Docker and Docker Swarm demos/interviews, these are the most commonly used commands:-
+------------------------------------------------------------------------------------------------------------
+
+# Docker Commands
+
+### List running containers
+
+```bash
+docker ps
+```
+
+### List all containers
+
+```bash
+docker ps -a
+```
+
+### List images
+
+```bash
+docker images
+```
+
+or
+
+```bash
+docker image ls
+```
+
+### View container logs
+
+```bash
+docker logs <container-id>
+```
+
+Follow logs:
+
+```bash
+docker logs -f <container-id>
+```
+
+### Enter a container
+
+```bash
+docker exec -it <container-id> sh
+```
+
+or
+
+```bash
+docker exec -it <container-id> bash
+```
+
+### Stop a container
+
+```bash
+docker stop <container-id>
+```
+
+### Start a container
+
+```bash
+docker start <container-id>
+```
+
+### Remove a container
+
+```bash
+docker rm <container-id>
+```
+
+### Remove an image
+
+```bash
+docker rmi <image-id>
+```
+
+### Build an image
+
+```bash
+docker build -t myapp .
+```
+
+### Run a container
+
+```bash
+docker run -d -p 3000:3000 myapp
+```
+
+### Inspect a container
+
+```bash
+docker inspect <container-id>
+```
+
+---
+
+# Docker Network Commands
+
+### List networks
+
+```bash
+docker network ls
+```
+
+### Inspect network
+
+```bash
+docker network inspect <network-name>
+```
+
+### Create network
+
+```bash
+docker network create my-network
+```
+
+---
+
+# Docker Volume Commands
+
+### List volumes
+
+```bash
+docker volume ls
+```
+
+### Inspect volume
+
+```bash
+docker volume inspect <volume-name>
+```
+
+### Remove volume
+
+```bash
+docker volume rm <volume-name>
+```
+
+---
+
+# Docker Swarm Commands
+
+### Initialize swarm
+
+```bash
+docker swarm init
+```
+
+### Leave swarm
+
+Worker:
+
+```bash
+docker swarm leave
+```
+
+Manager:
+
+```bash
+docker swarm leave --force
+```
+
+### View swarm nodes
+
+```bash
+docker node ls
+```
+
+### Inspect node
+
+```bash
+docker node inspect <node-id>
+```
+
+---
+
+# Service Commands
+
+### List services
+
+```bash
+docker service ls
+```
+
+### Inspect service
+
+```bash
+docker service inspect <service-name>
+```
+
+Pretty output:
+
+```bash
+docker service inspect <service-name> --pretty
+```
+
+### View service tasks
+
+```bash
+docker service ps <service-name>
+```
+
+### View service logs
+
+```bash
+docker service logs <service-name>
+```
+
+Follow logs:
+
+```bash
+docker service logs -f <service-name>
+```
+
+### Scale service
+
+```bash
+docker service scale demo_user-service=5
+```
+
+### Update service
+
+```bash
+docker service update --force <service-name>
+```
+
+### Remove service
+
+```bash
+docker service rm <service-name>
+```
+
+---
+
+# Stack Commands
+
+### Deploy stack
+
+```bash
+docker stack deploy -c docker-compose.yml demo
+```
+
+### List stacks
+
+```bash
+docker stack ls
+```
+
+### List services in stack
+
+```bash
+docker stack services demo
+```
+
+### List tasks in stack
+
+```bash
+docker stack ps demo
+```
+
+### Remove stack
+
+```bash
+docker stack rm demo
+```
+
+---
+
+# Useful Monitoring Commands
+
+### Resource usage
+
+```bash
+docker stats
+```
+
+### Watch services continuously
+
+```bash
+watch docker service ls
+```
+
+### Watch containers continuously
+
+```bash
+watch docker ps
+```
+
+### Check health status
+
+```bash
+docker inspect <container-id> --format='{{.State.Health.Status}}'
+```
+
+---
+
+For a Docker Swarm POC, the commands you'll use most often are:
+---------------------------------------------------------------
+
+```bash
+docker swarm init
+docker stack deploy -c docker-compose.yml demo
+docker service ls
+docker service ps demo_api-gateway
+docker service logs -f demo_api-gateway
+docker service scale demo_product-service=5
+docker stack ps demo
+docker node ls
+docker stats
+docker stack rm demo
+docker swarm leave --force
+```
+
+These cover 90% of day-to-day Docker Swarm operations.

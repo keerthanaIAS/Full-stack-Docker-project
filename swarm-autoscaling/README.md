@@ -554,7 +554,7 @@ receivers:
       - url: 'http://autoscaler:6000/alert'
 Step 3: Deploy the Stack
 -----------------------
-docker stack deploy -c docker-compose.yml myapp
+docker stack deploy -c docker-compose.yml myapp  -> -c is creating containers
 Step 4: Verify All Services Running
 ----------------------------------
 docker service ls
