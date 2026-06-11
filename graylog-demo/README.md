@@ -836,3 +836,23 @@ curl http://localhost:9000/api/system/lbstatus
 
 **Solution with centralized logs:** All logs go to one external system (Graylog/Loki), so you can search across ALL containers from one dashboard, even after containers are destroyed or restarted.
 
+
+*while fluentd get the log its connect the plugin loki*?
+
+Yes, **Fluentd plugin `fluent-plugin-loki`** connects Fluentd to Loki:
+
+```
+App → Docker Fluentd Driver → Fluentd → [fluent-plugin-loki] → Loki → Grafana
+```
+
+**Plugin installed via:** `fluent-gem install fluent-plugin-loki`
+
+**Config in fluent.conf:**
+```xml
+<match **>
+  @type loki              # Plugin name
+  url "http://loki:3100"  # Loki endpoint
+</match>
+```
+
+**Without this plugin:** Fluentd can't send logs to Loki - it only knows file, stdout, elasticsearch outputs by default. Plugin adds Loki support.
