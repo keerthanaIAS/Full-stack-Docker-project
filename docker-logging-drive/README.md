@@ -783,7 +783,7 @@ Output:
 /var/lib/docker/containers/.../container-json.log
 ```
 
-But that path exists **inside Docker's Linux VM**, not on your macOS filesystem.
+But that path exists **inside Docker's Linux VM**, not on your macOS filesystem.                                     --------> *important notes*
 
 So when you run:
 

@@ -1,0 +1,57 @@
+services:
+  # Fluentd
+  fluentd:
+    build: ./fluentd
+    container_name: fluentd
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    volumes:
+      - ./fluentd/fluent.conf:/fluentd/etc/fluent.conf
+      - ./fluentd-logs:/fluentd/log
+    command: fluentd -c /fluentd/etc/fluent.conf
+    depends_on:
+      - loki
+
+  # Loki - Log Aggregator (like Elasticsearch but lighter)
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+
+  # Grafana - Dashboard Visualization
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: grafana
+    ports:
+      - "3001:3000"           # 3001 to avoid conflict with app
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - loki
+
+  # Our app
+  app:
+    build: ./app
+    container_name: my-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - fluentd
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: "host.docker.internal:24224" # ← Address of the Fluentd service
+        tag: "app.my-app"      # ← Tag for filtering
+
+volumes:
+  loki-data:
+  grafana-data:

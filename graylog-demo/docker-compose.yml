@@ -1,0 +1,60 @@
+services:
+  # MongoDB (required by Graylog)
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    volumes:
+      - mongo-data:/data/db
+
+  # Elasticsearch (required by Graylog)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+    container_name: elasticsearch
+    environment:
+      - "discovery.type=single-node"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+
+  # Graylog Server
+  graylog:
+    image: graylog/graylog:5.0
+    container_name: graylog
+    ports:
+      - "9000:9000"        # Web UI
+      - "12201:12201/udp"  # GELF input
+      - "12201:12201"      # GELF TCP
+      - "1514:1514"        # Syslog input (bonus!)
+    environment:
+      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper123
+      - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+      # Root password: admin (SHA2 hash of "admin")
+      - GRAYLOG_HTTP_EXTERNAL_URI=http://localhost:9000/
+      - GRAYLOG_ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - GRAYLOG_MONGODB_URI=mongodb://mongodb:27017/graylog
+      - GRAYLOG_TIMEZONE=UTC
+      - GRAYLOG_ROOT_TIMEZONE=UTC
+    depends_on:
+      - mongodb
+      - elasticsearch
+
+  # Our App with GELF driver
+  app:
+    build: ./app
+    container_name: graylog-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - graylog
+    logging:
+      driver: "gelf"                    # ← GELF driver!
+      options:
+       # gelf-address: "udp://graylog:12201"
+        gelf-address: "udp://host.docker.internal:12201"
+        tag: "my-shop-app"
+        mode: "non-blocking"
+        gelf-compression-type: "none"
+
+volumes:
+  mongo-data:
+  es-data:

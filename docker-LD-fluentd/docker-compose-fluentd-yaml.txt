@@ -1,0 +1,28 @@
+services:
+  # Fluentd service
+  fluentd:
+    image: fluent/fluentd:v1.16-1
+    container_name: fluentd
+    ports:
+      - "24224:24224"           # Fluentd forward port
+      - "24224:24224/udp"
+    volumes:
+      - ./fluentd/fluent.conf:/fluentd/etc/fluent.conf
+      - ./fluentd-logs:/fluentd/log
+    command: fluentd -c /fluentd/etc/fluent.conf
+
+  # Our app
+  app:
+    build: ./app
+    container_name: my-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - fluentd
+    logging:
+      driver: "fluentd"        # ← Send logs to Fluentd
+      options:
+       # fluentd-address: "localhost:24224"
+        # fluentd-address: "fluentd:24224"
+        fluentd-address: "host.docker.internal:24224"
+        tag: "app.{{.Name}}"    # Tag for filtering
