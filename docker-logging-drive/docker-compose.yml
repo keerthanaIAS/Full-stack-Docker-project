@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # FTP Server
+  ftp-server:
+    image: stilliard/pure-ftpd # Lightweight FTP server image # Pre-built image from Docker Hub
+    container_name: ftp-server
+    ports:
+      - "21:21"
+    environment:
+      - FTP_USER_NAME=ftpuser
+      - FTP_USER_PASS=ftppass
+      - FTP_USER_HOME=/home/ftpuser
+    volumes:
+      - ftp-data:/home/ftpuser
+
+  # Backend API
+  backend:
+    build: ./backend
+    container_name: backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./logs:/app/../logs  # Logs persist on your host machine in ./logs/ folder # without this Container removed = logs lost forever
+    depends_on:
+      - ftp-server  # Wait for FTP to start first
+      # Both services are on same Docker network automatically, so backend can reach ftp-server by its service name
+    logging:
+      # driver: "json-file" # Docker default, easy to query with docker logs
+      driver: "local"  # More efficient, supports log rotation and compression # Better performance than json-file, Compresses old logs automatically, Still accessible via docker logs
+      options:
+        max-size: "10m" # Container logs can fill disk quickly
+        max-file: "3" # Rotation keeps last 30MB total, auto-cleanup
+        mode: "non-blocking" # Don't block container if logging is slow, logs may be dropped instead -> using this for local driver
+
+  # Frontend
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  ftp-data:
