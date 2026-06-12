@@ -158,3 +158,27 @@ Container Network Receive
 Container Network Transmit
 * rate(container_network_transmit_bytes_total[1m])
 
+#### ! Network prometheus-demo_default  Resource is still in use , what i have to do for stop
+
+# 1. See what's using the network
+docker network inspect prometheus-demo_default
+
+# 2. Stop ALL containers using it
+docker-compose down
+
+# 3. If still stuck, force remove containers
+docker ps -a
+docker stop $(docker ps -aq)    # Stop all containers
+docker rm $(docker ps -aq)      # Remove all containers
+
+# 4. Remove the network manually
+docker network rm prometheus-demo_default
+
+# 5. Prune unused networks
+docker network prune
+
+# 6. Now restart fresh
+docker-compose up -d
+
+*or one line*
+docker-compose down --remove-orphans
