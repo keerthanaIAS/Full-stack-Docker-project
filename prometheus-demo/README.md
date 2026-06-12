@@ -182,3 +182,28 @@ docker-compose up -d
 
 *or one line*
 docker-compose down --remove-orphans
+
+
+#### why loki:3001 not wokring this is working loki-url: "http://host.docker.internal:3100/loki/api/v1/push" can u say in one line.      --->*questin*
+
+## In one line:
+
+The Docker Loki logging plugin runs outside the Docker Compose network, so it cannot resolve loki:3100, but it can reach host.docker.internal:3100, which points to your Docker host.
+
+# For interviews:
+
+Containers can use service names like loki, but Docker plugins/logging drivers often need host.docker.internal because they run at the Docker daemon level, not inside the Compose network.
+
+
+# if prometheus dont show the label means steps to follow:                                                      ----->*important fix*
+Prometheus queries are case-sensitive and need EXACT metric names.
+
+keerthana@Keerthanas-MacBook-Air prometheus-demo % curl http://localhost:3000/metrics
+# HELP http_requests_total Total HTTP requests
+# TYPE http_requests_total counter
+
+# HELP http_request_duration_seconds Request duration in seconds
+# TYPE http_request_duration_seconds histogram
+keerthana@Keerthanas-MacBook-Air prometheus-demo % for i in {1..10}; do curl http://localhost:3000/; done
+Hello Prometheus!Hello Prometheus!Hello Prometheus!Hello Prometheus!Hello Prometheus!Hello Prometheus!Hello Prometheus!Hello Prometheus!Hello Prometheus!Hello Prometheus!%   
+*now u can see the http_request_total option*

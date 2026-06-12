@@ -53,17 +53,36 @@ const requestDuration = new client.Histogram({ // Histogram for request duration
 });
 
 // Expose metrics endpoint for Prometheus
-app.get('/metrics', async (req, res) => {
-  res.set('Content-Type', client.register.contentType);
-  res.end(await client.register.metrics());
+app.get('/metrics', async (req, res) => { // Prometheus scrapes this endpoint to collect metrics
+  res.set('Content-Type', client.register.contentType); // Set content type to Prometheus format
+  res.end(await client.register.metrics()); // Return all metrics in Prometheus format
 });
 
 // Home page with metrics tracking
 app.get('/', (req, res) => {
   const start = Date.now();
-  httpRequests.inc({ method: 'GET', endpoint: '/' });
+  httpRequests.inc({ method: 'GET', endpoint: '/' }); // Increment request count for this endpoint 
+  // Counter goes: 0 → 1 → 2 → 3 → 4 ...
+//   Requests
+//    ↑
+// 10 │        ●
+//  8 │      ●
+//  6 │    ●
+//  4 │  ●
+//  2 │●
+//  0 └──────────→ Time
+//     Each dot = someone visited your grafna page 
+// Without .inc() → Graph stays at 0 forever. Each .inc() adds +1 to the counter, creating the upward graph you see in Grafana!
   res.send('Hello Prometheus!');
-  requestDuration.observe({ method: 'GET', endpoint: '/' }, (Date.now() - start) / 1000);
+  requestDuration.observe({ method: 'GET', endpoint: '/' }, (Date.now() - start) / 1000); // Observe request duration in seconds
+  // Example: (10:00:00.150 - 10:00:00.000) / 1000 = 0.150 seconds
+//   Response Time (seconds)
+//    ↑
+// 0.5│     ● (slow request)
+// 0.3│   ●
+// 0.2│ ●   ●
+// 0.1│●       ●  ● (most are fast)
+//    └──────────────────→ Time
 });
 
 // API endpoint
@@ -74,6 +93,25 @@ app.get('/api/data', (req, res) => {
   requestDuration.observe({ method: 'GET', endpoint: '/api/data' }, (Date.now() - start) / 1000);
 });
 
+setInterval(() => {
+  console.log("Hello Loki");
+}, 5000);
+
 app.listen(PORT, () => {
-  console.log(`App running on port ${PORT}`);
+  console.log(`App running on port ${PORT}`); // Start the server and listen on the specified port
 });
+
+// Why Histogram (not Counter)?
+// Counter: just counts (1, 2, 3, 4...)
+// httpRequests.inc()  // "5 requests happened"
+
+// Histogram: records values (0.1s, 0.5s, 0.05s...)
+// requestDuration.observe(0.15)  // "One request took 0.15 seconds"
+
+// Histogram lets you calculate:
+// - Average: 0.2s
+// - Slowest 5%: > 1s  
+// - Fastest: 0.01s
+
+// Simple: .inc() = "+1 to counter" (graph goes up), .observe(value) = "record this number" (shows distribution of response times).
+
